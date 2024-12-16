@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Image Analysis with Gemini</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .image-section {
+            flex: 1;
+            min-width: 400px;
+        }
+        .analysis-section {
+            flex: 1;
+        }
+        #result {
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .controls {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 5px;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        input[type="file"] {
+            margin: 10px 0;
+        }
+        .loading {
+            color: #666;
+            font-style: italic;
+        }
+        .markdown {
+            line-height: 1.6;
+        }
+        .markdown strong {
+            color: #2c3e50;
+        }
+        .markdown ul {
+            list-style-type: none;
+            padding-left: 20px;
+        }
+        .markdown li {
+            margin: 5px 0;
+        }
+        #imagePreview {
+            max-width: 100%;
+            border-radius: 5px;
+            display: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .image-container {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background: #fff;
+        }
+    </style>
+</head>
+<body>
+    <h1>Image Analysis with Google Gemini</h1>
+    
+    <div class="controls">
+        <input type="file" id="imageInput" accept="image/*">
+        <button onclick="analyzeImage()">Analyze Image</button>
+    </div>
+
+    <div class="container">
+        <div class="image-section">
+            <h2>Uploaded Image</h2>
+            <div class="image-container">
+                <img id="imagePreview" alt="Preview">
+            </div>
+        </div>
+        <div class="analysis-section">
+            <h2>Analysis Result</h2>
+            <div id="result"></div>
+        </div>
+    </div>
+
+    <script>
+        // Preview image before upload
+        document.getElementById('imageInput').addEventListener('change', function(e) {
+            const preview = document.getElementById('imagePreview');
+            const file = e.target.files[0];
+            
+            if (file) {
+                preview.style.display = 'block';
+                preview.src = URL.createObjectURL(file);
+            }
+        });
+
+        function formatMarkdown(text) {
+            return text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\n/g, '<br>')
+                .replace(/\s{4}/g, '&nbsp;&nbsp;&nbsp;&nbsp;');
+        }
+
+        async function analyzeImage() {
+            const fileInput = document.getElementById('imageInput');
+            const resultDiv = document.getElementById('result');
+            
+            if (!fileInput.files[0]) {
+                alert('Please select an image first');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            resultDiv.innerHTML = '<div class="loading">Analyzing image... Please wait...</div>';
+
+            try {
+                const response = await fetch('http://localhost:8000/analyze-image', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    resultDiv.innerHTML = `<div class="markdown">${formatMarkdown(data.description)}</div>`;
+                } else {
+                    resultDiv.innerHTML = `<h3>Error:</h3><p>${data.error}</p>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<h3>Error:</h3><p>${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html> 
