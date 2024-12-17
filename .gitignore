@@ -8,6 +8,7 @@ credentials.json
 *.pem
 *.key
 secrets/
+credentials/
 
 # Python
 __pycache__/
