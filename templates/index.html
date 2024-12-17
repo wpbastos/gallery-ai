@@ -1,167 +1,1014 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Image Analysis with Gemini</title>
+    <title>Image Analysis with AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto', sans-serif;
+        }
+
         body {
-            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
-            line-height: 1.6;
         }
-        .container {
-            display: flex;
-            gap: 20px;
-            margin-top: 20px;
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
         }
-        .image-section {
-            flex: 1;
-            min-width: 400px;
+
+        .header h1 {
+            font-size: 2.5em;
+            color: #1a73e8;
+            margin-bottom: 10px;
         }
-        .analysis-section {
-            flex: 1;
-        }
-        #result {
-            padding: 20px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            white-space: pre-wrap;
-            font-family: 'Courier New', monospace;
-            max-height: 600px;
-            overflow-y: auto;
-        }
-        .controls {
-            margin: 20px 0;
-            padding: 15px;
-            background: #f5f5f5;
-            border-radius: 5px;
-        }
-        button {
-            background: #4CAF50;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        button:hover {
-            background: #45a049;
-        }
-        input[type="file"] {
-            margin: 10px 0;
-        }
-        .loading {
-            color: #666;
-            font-style: italic;
-        }
-        .markdown {
-            line-height: 1.6;
-        }
-        .markdown strong {
-            color: #2c3e50;
-        }
-        .markdown ul {
-            list-style-type: none;
-            padding-left: 20px;
-        }
-        .markdown li {
-            margin: 5px 0;
-        }
-        #imagePreview {
-            max-width: 100%;
-            border-radius: 5px;
-            display: none;
+
+        .card {
+            background: white;
+            border-radius: 12px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 24px;
+            margin-bottom: 24px;
         }
-        .image-container {
-            margin-top: 20px;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            background: #fff;
+
+        .control-panel {
+            display: grid;
+            grid-template-columns: 1fr auto auto;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .file-input-wrapper {
             position: relative;
         }
-        .face-overlay {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            pointer-events: none;
+
+        .file-input {
+            display: none;
         }
-        .faces-section {
-            margin: 20px 0;
-            padding: 15px;
-            background: #f5f5f5;
-            border-radius: 5px;
+
+        .file-input-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            background: #1a73e8;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.2s;
         }
-        .names-input {
-            margin-top: 15px;
+
+        .file-input-label:hover {
+            background: #1557b0;
         }
-        .names-input input {
+
+        .file-path {
+            margin-top: 8px;
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .temperature-control {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .temperature-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .temperature-slider {
+            -webkit-appearance: none;
             width: 100%;
-            padding: 8px;
-            border: 1px solid #ccc;
+            height: 4px;
+            background: #e0e0e0;
+            border-radius: 2px;
+            outline: none;
+        }
+
+        .temperature-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #1a73e8;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .temperature-slider::-webkit-slider-thumb:hover {
+            background: #1557b0;
+        }
+
+        .analyze-button {
+            padding: 12px 24px;
+            background: #1a73e8;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .analyze-button:hover {
+            background: #1557b0;
+        }
+
+        .analyze-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ffffff;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            display: none;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-top: 24px;
+        }
+
+        .image-preview {
+            position: relative;
+            min-height: 300px;
+            border: 2px dashed #e0e0e0;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .image-preview img {
+            max-width: 100%;
+            max-height: 600px;
+            width: auto;
+            height: auto;
+            display: none;
+            object-fit: contain;
+        }
+
+        .placeholder-text {
+            color: #666;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .analysis-tabs {
+            display: flex;
+            gap: 2px;
+            margin-bottom: 16px;
+        }
+
+        .tab-button {
+            padding: 12px 24px;
+            background: #f5f5f5;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .tab-button.active {
+            background: #1a73e8;
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .image-list {
+            margin-top: 24px;
+        }
+
+        .image-list-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .image-list-item img {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
             border-radius: 4px;
         }
-        .analyze-btn {
-            margin-top: 10px;
-            width: 100%;
-            background: #4CAF50;
-            color: white;
-            padding: 10px;
+
+        .status-message {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            padding: 12px 24px;
+            border-radius: 8px;
+            margin: 8px 0;
+            display: none;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            min-width: 300px;
+            max-width: 400px;
+            animation: slideIn 0.3s ease-out;
+            font-weight: 500;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            border-left: 4px solid #c62828;
+        }
+
+        .success-message {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border-left: 4px solid #2e7d32;
+        }
+
+        .status-message.fade-out {
+            animation: slideOut 0.3s ease-in forwards;
+        }
+
+        .error-text {
+            color: #c62828;
+            padding: 12px;
+            background: #ffebee;
+            border-radius: 4px;
+            margin: 8px 0;
+        }
+
+        .tab-button .loading-indicator {
+            width: 16px;
+            height: 16px;
+            border: 2px solid currentColor;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            margin-left: 8px;
+            display: none;
+            animation: spin 1s linear infinite;
+        }
+
+        .tab-button.loading .loading-indicator {
+            display: inline-block;
+        }
+
+        .image-list-item {
+            display: flex;
+            gap: 24px;
+            padding: 24px;
+        }
+
+        .history-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .history-time {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .history-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .history-tab {
+            padding: 8px 16px;
+            background: #f5f5f5;
             border: none;
             border-radius: 4px;
             cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
         }
-        .analyze-btn:disabled {
-            background: #cccccc;
-            cursor: not-allowed;
+
+        .history-tab.active {
+            background: #1a73e8;
+            color: white;
+        }
+
+        .history-results {
+            position: relative;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .history-result {
+            display: none;
+            max-height: 300px;
+            overflow-y: auto;
+            line-height: 1.6;
+        }
+
+        .history-result.active {
+            display: block;
+        }
+
+        .history-result::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .history-result::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .history-result::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 4px;
+        }
+
+        .history-result::-webkit-scrollbar-thumb:hover {
+            background: #999;
+        }
+
+        .face-wrapper {
+            position: relative;
+        }
+
+        .face-remove {
+            position: absolute;
+            right: -8px;
+            top: -8px;
+            width: 20px;
+            height: 20px;
+            background: rgba(26, 115, 232, 0.8);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+
+        .face-remove:hover {
+            background: rgba(26, 115, 232, 1);
+            transform: scale(1.1);
+        }
+
+        /* Face Detection Styles */
+        .face-box {
+            position: absolute;
+            border: 1px solid rgba(26, 115, 232, 0.3);
+            background-color: transparent;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .face-box:hover {
+            border-color: rgba(26, 115, 232, 0.7);
+        }
+
+        .face-label {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: transparent;
+            color: rgb(255, 255, 255);
+            padding: 0;
+            border-radius: 4px;
+            font-size: 12px;
+            white-space: nowrap;
+            z-index: 10;
+            transition: all 0.2s ease;
+            display: flex;
+            min-width: max-content;
+            width: auto;
+        }
+
+        .face-box:hover .face-label {
+            color: rgb(255, 255, 255);
+        }
+
+        .face-label input {
+            background: none;
+            border: none;
+            color: rgb(255, 255, 255);
+            font-size: 12px;
+            text-align: center;
+            width: auto;
+            min-width: 60px;
+            padding: 2px 8px;
+            margin: 0;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .face-close {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            width: 16px;
+            height: 16px;
+            background-color: #ff4444;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .face-box:hover .face-close {
+            opacity: 1;
+        }
+
+        .history-image-container {
+            width: 200px;
+            height: 200px;
+            flex-shrink: 0;
+            overflow: hidden;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f5f5f5;
+        }
+
+        .history-image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .image-list-item {
+            display: flex;
+            gap: 24px;
+            padding: 24px;
+            align-items: flex-start;
+        }
+
+        .history-content {
+            flex: 1;
+            min-width: 0;
         }
     </style>
 </head>
 <body>
-    <h1>Image Analysis with Google Gemini</h1>
-    
-    <div class="controls">
-        <input type="file" id="imageInput" accept="image/*">
-        <button onclick="analyzeImage()" class="analyze-btn">Analyze Image with Names</button>
-    </div>
-
-    <div id="facesInfo" style="display: none;" class="faces-section">
-        <h3>Detected Faces</h3>
-        <div id="facesList"></div>
-        <div class="names-input">
-            <p>Enter names for detected faces (comma-separated):</p>
-            <input type="text" id="namesInput" placeholder="e.g., John, Jane, Bob">
-        </div>
-    </div>
-
     <div class="container">
-        <div class="image-section">
-            <h2>Uploaded Image</h2>
-            <div class="image-container">
-                <img id="imagePreview" alt="Preview">
-                <canvas id="faceOverlay" class="face-overlay"></canvas>
+        <div class="header">
+            <h1>Image Analysis</h1>
+        </div>
+
+        <div class="card">
+            <div class="control-panel">
+                <div class="file-input-wrapper">
+                    <label class="file-input-label">
+                        <span class="material-icons">add_photo_alternate</span>
+                        Choose an image
+                        <input type="file" class="file-input" id="imageInput" accept="image/*">
+                    </label>
+                    <div class="file-path" id="selectedFileName"></div>
+                </div>
+
+                <div class="temperature-control">
+                    <div class="temperature-label">
+                        <span>Temperature</span>
+                        <span id="temperatureValue">1.0</span>
+                    </div>
+                    <input type="range" id="temperature" class="temperature-slider" 
+                           min="0" max="2" step="0.1" value="1.0">
+                </div>
+
+                <button class="analyze-button" id="analyzeButton" disabled>
+                    <span class="spinner"></span>
+                    <span class="button-text">Analyze</span>
+                </button>
+            </div>
+
+            <div class="status-message error-message" id="errorMessage"></div>
+            <div class="status-message success-message" id="successMessage"></div>
+        </div>
+
+        <div class="content-grid">
+            <div class="card">
+                <h2>Image Preview</h2>
+                <div class="image-preview">
+                    <div class="placeholder-text" id="imagePlaceholder">
+                        No image selected. Please choose an image to begin analysis.
+                    </div>
+                    <img id="imagePreview" alt="Preview">
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Analysis Results</h2>
+                <div class="analysis-tabs">
+                    <button class="tab-button active" onclick="switchTab('gemini')">
+                        Gemini
+                        <span class="loading-indicator"></span>
+                    </button>
+                    <button class="tab-button" onclick="switchTab('openai')">
+                        OpenAI
+                        <span class="loading-indicator"></span>
+                    </button>
+                </div>
+                <div id="geminiResult" class="tab-content active">
+                    <div class="placeholder-text">
+                        Gemini analysis results will appear here after processing.
+                    </div>
+                </div>
+                <div id="openaiResult" class="tab-content">
+                    <div class="placeholder-text">
+                        OpenAI analysis results will appear here after processing.
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="analysis-section">
-            <h2>Analysis Result</h2>
-            <div id="result"></div>
+
+        <div class="card image-list">
+            <h2>Analysis History</h2>
+            <div id="imageHistory"></div>
         </div>
     </div>
 
     <script>
-        // Preview image before upload
-        document.getElementById('imageInput').addEventListener('change', function(e) {
-            const preview = document.getElementById('imagePreview');
-            const file = e.target.files[0];
+        const state = {
+            isProcessing: false,
+            faces: [],
+            imageFile: null,
+            faceNames: new Map(),
+            allNamesEntered: false,
+            currentTab: 'gemini',
+            temperature: 1.0,
+            analysisHistory: []
+        };
+
+        function addToHistory(imageFile, geminiResult, openaiResult) {
+            const historyItem = {
+                file: imageFile,
+                timestamp: new Date(),
+                geminiResult,
+                openaiResult
+            };
+            state.analysisHistory.unshift(historyItem);
+            updateHistoryDisplay();
+        }
+
+        function updateHistoryDisplay() {
+            const historyContainer = document.getElementById('imageHistory');
+            historyContainer.innerHTML = state.analysisHistory.map((item, index) => `
+                <div class="image-list-item">
+                    <div class="history-image-container">
+                        <img src="${URL.createObjectURL(item.file)}" alt="Analyzed image">
+                    </div>
+                    <div class="history-content">
+                        <div class="history-header">
+                            <strong>${item.file.name}</strong>
+                            <div class="history-time">Analyzed at ${item.timestamp.toLocaleTimeString()}</div>
+                        </div>
+                        <div class="history-tabs">
+                            <button class="history-tab active" onclick="switchHistoryTab(${index}, 'gemini')">Gemini</button>
+                            <button class="history-tab" onclick="switchHistoryTab(${index}, 'openai')">OpenAI</button>
+                        </div>
+                        <div class="history-results">
+                            <div class="history-result active" id="history-gemini-${index}">
+                                ${formatMarkdown(item.geminiResult)}
+                            </div>
+                            <div class="history-result" id="history-openai-${index}">
+                                ${formatMarkdown(item.openaiResult)}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function switchHistoryTab(index, tab) {
+            // Update tab buttons
+            const historyItem = document.querySelectorAll('.image-list-item')[index];
+            const tabs = historyItem.querySelectorAll('.history-tab');
+            tabs.forEach(t => t.classList.remove('active'));
+            const activeTab = Array.from(tabs).find(t => t.textContent.toLowerCase() === tab);
+            if (activeTab) activeTab.classList.add('active');
+
+            // Update content
+            const results = historyItem.querySelectorAll('.history-result');
+            results.forEach(r => r.classList.remove('active'));
+            document.getElementById(`history-${tab}-${index}`).classList.add('active');
+        }
+
+        function checkAllNamesEntered() {
+            if (!state.faces.length) return false;
             
-            if (file) {
-                preview.style.display = 'block';
-                preview.src = URL.createObjectURL(file);
+            // Check if all faces have non-empty names
+            for (let i = 0; i < state.faces.length; i++) {
+                const name = state.faceNames.get(i);
+                if (!name || name.trim() === '' || name === `Face ${i + 1}`) {
+                    return false;
+                }
             }
-            detectFaces();
+            return true;
+        }
+
+        function updateAnalyzeButtonState() {
+            const button = document.getElementById('analyzeButton');
+            state.allNamesEntered = checkAllNamesEntered();
+            button.disabled = state.isProcessing || !state.imageFile;
+            
+            // Update button text based on state
+            const buttonText = button.querySelector('.button-text');
+            if (!state.imageFile) {
+                buttonText.textContent = 'Please select an image';
+            } else if (state.faces.length > 0 && !state.allNamesEntered) {
+                buttonText.textContent = 'Please name all faces';
+                button.disabled = true;
+            } else {
+                buttonText.textContent = 'Analyze Image';
+            }
+        }
+
+        function showError(message) {
+            const errorElement = document.getElementById('errorMessage');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+            errorElement.classList.remove('fade-out');
+            
+            setTimeout(() => {
+                errorElement.classList.add('fade-out');
+                setTimeout(() => {
+                    errorElement.style.display = 'none';
+                    errorElement.classList.remove('fade-out');
+                }, 300);
+            }, 10000);
+        }
+
+        function showSuccess(message) {
+            const successElement = document.getElementById('successMessage');
+            successElement.textContent = message;
+            successElement.style.display = 'block';
+            successElement.classList.remove('fade-out');
+            
+            setTimeout(() => {
+                successElement.classList.add('fade-out');
+                setTimeout(() => {
+                    successElement.style.display = 'none';
+                    successElement.classList.remove('fade-out');
+                }, 300);
+            }, 10000);
+        }
+
+        function updateUIState(processing) {
+            state.isProcessing = processing;
+            const button = document.getElementById('analyzeButton');
+            const spinner = button.querySelector('.spinner');
+            const geminiTab = document.querySelector('.tab-button:nth-child(1)');
+            const openaiTab = document.querySelector('.tab-button:nth-child(2)');
+            
+            if (!processing) {
+                geminiTab.classList.remove('loading');
+                openaiTab.classList.remove('loading');
+            }
+            
+            updateAnalyzeButtonState();
+            spinner.style.display = processing ? 'block' : 'none';
+        }
+
+        // Preview image before upload
+        document.getElementById('imageInput').addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // Reset all face-related data
+            currentImage = file;
+            faces = [];
+            removedFaceIndices.clear();
+            state.faceNames.clear();
+            
+            // Clear any existing face boxes
+            const existingBoxes = document.querySelectorAll('.face-box');
+            existingBoxes.forEach(box => box.remove());
+
+            const preview = document.getElementById('imagePreview');
+            const placeholder = document.getElementById('imagePlaceholder');
+            const fileNameSpan = document.getElementById('selectedFileName');
+            
+            state.imageFile = file;
+            updateUIState(false);
+            
+            // Create FormData and call face detection API
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('http://localhost:8000/detect-faces', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                if (data.status === 'success') {
+                    faces = data.faces;
+                    showSuccess(`Detected ${faces.length} faces`);
+                }
+
+                // Load and display the image
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.style.display = 'block';
+                    preview.src = e.target.result;
+                    placeholder.style.display = 'none';
+                    fileNameSpan.textContent = file.name;
+                    
+                    // Create face boxes after image is loaded
+                    preview.onload = () => {
+                        if (faces.length > 0) {
+                            createFaceBoxes(faces);
+                        }
+                    };
+                };
+                reader.readAsDataURL(file);
+
+            } catch (error) {
+                console.error('Error detecting faces:', error);
+                showError('Error detecting faces: ' + error.message);
+            }
         });
+
+        let currentImage = null;
+        let faces = [];
+        let removedFaceIndices = new Set(); // Track indices of removed faces
+
+        function createFaceBoxes(faces) {
+            const imagePreview = document.querySelector('.image-preview');
+            const img = imagePreview.querySelector('img');
+            
+            // Clear existing face boxes
+            const existingBoxes = imagePreview.querySelectorAll('.face-box');
+            existingBoxes.forEach(box => box.remove());
+            
+            // Calculate scale factors
+            const scaleX = img.width / img.naturalWidth;
+            const scaleY = img.height / img.naturalHeight;
+            
+            faces.forEach((face, index) => {
+                // Skip removed faces
+                if (removedFaceIndices.has(index)) return;
+
+                const box = document.createElement('div');
+                box.className = 'face-box';
+                box.dataset.faceIndex = index; // Store the original index
+                
+                // Scale coordinates to match displayed image size
+                const [x1, y1, x2, y2] = face.box_2d;
+                box.style.left = `${x1 * scaleX}px`;
+                box.style.top = `${y1 * scaleY}px`;
+                box.style.width = `${(x2 - x1) * scaleX}px`;
+                box.style.height = `${(y2 - y1) * scaleY}px`;
+                
+                // Create label
+                const label = document.createElement('div');
+                label.className = 'face-label';
+                const input = document.createElement('input');
+                input.value = state.faceNames.get(index) || face.label;
+                
+                // Handle name editing
+                input.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    input.select();
+                });
+                
+                input.addEventListener('change', (e) => {
+                    const newName = e.target.value.trim();
+                    if (newName) {
+                        state.faceNames.set(index, newName);
+                        face.label = newName;
+                    } else {
+                        // If empty, revert to default name
+                        const defaultName = `Face ${index + 1}`;
+                        input.value = defaultName;
+                        state.faceNames.set(index, defaultName);
+                        face.label = defaultName;
+                    }
+                    updateAnalyzeButtonState();
+                });
+                
+                // Handle keyboard events
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        input.blur(); // Remove focus
+                    }
+                });
+                
+                label.appendChild(input);
+                
+                // Create close button
+                const closeBtn = document.createElement('div');
+                closeBtn.className = 'face-close';
+                closeBtn.innerHTML = '×';
+                closeBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const faceIndex = parseInt(box.dataset.faceIndex);
+                    removedFaceIndices.add(faceIndex); // Mark this face as removed
+                    state.faceNames.delete(faceIndex);
+                    box.remove();
+                    updateAnalyzeButtonState();
+                });
+                
+                box.appendChild(label);
+                box.appendChild(closeBtn);
+                imagePreview.appendChild(box);
+            });
+        }
+
+        // Add event listener for window resize to update box positions
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                if (faces.length > 0) {
+                    createFaceBoxes(faces);
+                }
+            }, 100);
+        });
+
+        function switchTab(tab) {
+            // Update active tab button
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active');
+                if (button.textContent.toLowerCase().includes(tab)) {
+                    button.classList.add('active');
+                }
+            });
+
+            // Update active content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`${tab}Result`).classList.add('active');
+            state.currentTab = tab;
+        }
+
+        async function analyzeImage() {
+            if (!state.imageFile || state.isProcessing) return;
+            
+            updateUIState(true);
+            
+            try {
+                const formData = new FormData();
+                formData.append('file', state.imageFile);
+                formData.append('temperature', state.temperature.toString());
+                
+                // Prepare face locations data excluding removed faces
+                const faceLocations = {
+                    face_detections: faces
+                        .map((face, index) => {
+                            // Skip if this face was removed
+                            if (removedFaceIndices.has(index)) return null;
+                            
+                            return {
+                                name: state.faceNames.get(index) || face.label,
+                                coordinates: face.box_2d
+                            };
+                        })
+                        .filter(face => face !== null) // Remove null entries (removed faces)
+                };
+                
+                formData.append('face_locations', JSON.stringify(faceLocations));
+                
+                // Start both analyses but handle them independently
+                const geminiTab = document.querySelector('.tab-button:nth-child(1)');
+                const openaiTab = document.querySelector('.tab-button:nth-child(2)');
+                
+                geminiTab.classList.add('loading');
+                openaiTab.classList.add('loading');
+
+                const geminiPromise = fetch('http://localhost:8000/analyze-image', {
+                    method: 'POST',
+                    body: formData
+                }).then(async response => {
+                    const data = await response.json();
+                    if (data.error) throw new Error(data.error);
+                    document.getElementById('geminiResult').innerHTML = formatMarkdown(data.description);
+                    showSuccess('Gemini analysis completed');
+                    geminiTab.classList.remove('loading');
+                    return data;
+                }).catch(error => {
+                    showError(`Gemini analysis failed: ${error.message}`);
+                    document.getElementById('geminiResult').innerHTML = `<div class="error-text">Analysis failed: ${error.message}</div>`;
+                    geminiTab.classList.remove('loading');
+                    throw error;
+                });
+
+                const openaiPromise = fetch('http://localhost:8000/analyze-image-openai', {
+                    method: 'POST',
+                    body: formData
+                }).then(async response => {
+                    const data = await response.json();
+                    if (data.error) throw new Error(data.error);
+                    document.getElementById('openaiResult').innerHTML = formatMarkdown(data.description);
+                    showSuccess('OpenAI analysis completed');
+                    openaiTab.classList.remove('loading');
+                    return data;
+                }).catch(error => {
+                    showError(`OpenAI analysis failed: ${error.message}`);
+                    document.getElementById('openaiResult').innerHTML = `<div class="error-text">Analysis failed: ${error.message}</div>`;
+                    openaiTab.classList.remove('loading');
+                    throw error;
+                });
+
+                // Wait for both to complete to update history
+                try {
+                    const [geminiData, openaiData] = await Promise.allSettled([geminiPromise, openaiPromise]);
+                    if (geminiData.status === 'fulfilled' && openaiData.status === 'fulfilled') {
+                        addToHistory(state.imageFile, geminiData.value.description, openaiData.value.description);
+                    }
+                } catch (error) {
+                    console.error('Error updating history:', error);
+                }
+
+            } finally {
+                updateUIState(false);
+            }
+        }
 
         function formatMarkdown(text) {
             return text
@@ -170,154 +1017,35 @@
                 .replace(/\s{4}/g, '&nbsp;&nbsp;&nbsp;&nbsp;');
         }
 
-        function drawFaceBoxes(faces, names = null) {
-            const img = document.getElementById('imagePreview');
-            const canvas = document.getElementById('faceOverlay');
-            const ctx = canvas.getContext('2d');
+        // Add temperature change handler
+        document.getElementById('temperature').addEventListener('input', function(e) {
+            state.temperature = parseFloat(e.target.value);
+            document.getElementById('temperatureValue').textContent = state.temperature.toFixed(1);
+        });
 
-            // Set canvas size to match image
-            canvas.width = img.width;
-            canvas.height = img.height;
+        // Add analyze button click handler
+        document.getElementById('analyzeButton').addEventListener('click', analyzeImage);
 
-            // Calculate scaling factors
-            const scaleX = img.width / img.naturalWidth;
-            const scaleY = img.height / img.naturalHeight;
-
-            // Clear previous drawings
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Set drawing styles
-            ctx.strokeStyle = '#00ff00';
-            ctx.lineWidth = 2;
-            ctx.font = '16px Arial';
-            ctx.fillStyle = '#00ff00';
-
-            faces.forEach((face, index) => {
-                const bounds = face.bounds;
-                // Scale the coordinates
-                const x = bounds[0][0] * scaleX;
-                const y = bounds[0][1] * scaleY;
-                const width = (bounds[2][0] - bounds[0][0]) * scaleX;
-                const height = (bounds[2][1] - bounds[0][1]) * scaleY;
-
-                // Draw rectangle
-                ctx.strokeRect(x, y, width, height);
-
-                // Draw label
-                const label = names && names[index] ? names[index].trim() : `Person ${index + 1}`;
-                ctx.fillStyle = 'rgba(0, 255, 0, 0.8)';
-                ctx.fillRect(x, y - 20, ctx.measureText(label).width + 10, 20);
-                ctx.fillStyle = '#000';
-                ctx.fillText(label, x + 5, y - 5);
+        function removeFace(index) {
+            state.faces.splice(index, 1);
+            state.faceNames.delete(index);
+            
+            // Reindex remaining faces
+            const newFaceNames = new Map();
+            state.faces.forEach((face, i) => {
+                const oldName = state.faceNames.get(i);
+                if (oldName && !oldName.startsWith('Face ')) {
+                    newFaceNames.set(i, oldName);
+                } else {
+                    newFaceNames.set(i, `Face ${i + 1}`);
+                }
+                face.label = `Face ${i + 1}`;
             });
-        }
-
-        // Update boxes when names are entered
-        document.getElementById('namesInput').addEventListener('input', function(e) {
-            if (window.lastDetectedFaces) {
-                const names = e.target.value.split(',');
-                drawFaceBoxes(window.lastDetectedFaces, names);
-            }
-        });
-
-        async function detectFaces() {
-            const fileInput = document.getElementById('imageInput');
-            const facesInfo = document.getElementById('facesInfo');
-            const facesList = document.getElementById('facesList');
-            const analyzeBtn = document.querySelector('.analyze-btn');
-            const namesInput = document.getElementById('namesInput');
+            state.faceNames = newFaceNames;
             
-            if (!fileInput.files[0]) {
-                alert('Please select an image first');
-                return;
-            }
-
-            const formData = new FormData();
-            formData.append('file', fileInput.files[0]);
-
-            try {
-                const response = await fetch('http://localhost:8000/detect-faces', {
-                    method: 'POST',
-                    body: formData
-                });
-                const data = await response.json();
-                
-                if (data.status === 'success' && data.faces) {
-                    facesInfo.style.display = 'block';
-                    let facesHtml = '<ul>';
-                    data.faces.forEach((face, index) => {
-                        facesHtml += `<li>Person ${index + 1} - Emotions: ${Object.entries(face.emotions)
-                            .map(([emotion, level]) => `${emotion}: ${level}`)
-                            .join(', ')}</li>`;
-                    });
-                    facesHtml += '</ul>';
-                    facesList.innerHTML = facesHtml;
-                    analyzeBtn.disabled = false;
-                    window.lastDetectedFaces = data.faces;
-                    // Clear previous names
-                    namesInput.value = '';
-                    // Create placeholder with the correct number of empty names
-                    namesInput.placeholder = Array(data.faces.length).fill('Name').join(', ');
-                    drawFaceBoxes(data.faces);
-                } else {
-                    facesInfo.style.display = 'none';
-                    analyzeBtn.disabled = true;
-                }
-            } catch (error) {
-                console.error('Error detecting faces:', error);
-                analyzeBtn.disabled = true;
-            }
-        }
-
-        // Update canvas when image loads
-        document.getElementById('imagePreview').addEventListener('load', function() {
-            const canvas = document.getElementById('faceOverlay');
-            canvas.width = this.width;
-            canvas.height = this.height;
-            // If we already have face data, redraw the boxes
-            const facesList = document.getElementById('facesList');
-            if (facesList.children.length > 0) {
-                const names = document.getElementById('namesInput').value.split(',');
-                drawFaceBoxes(window.lastDetectedFaces, names);
-            }
-        });
-
-        async function analyzeImage() {
-            const fileInput = document.getElementById('imageInput');
-            const resultDiv = document.getElementById('result');
-            const namesInput = document.getElementById('namesInput');
-            
-            if (!fileInput.files[0]) {
-                alert('Please select an image first');
-                return;
-            }
-
-            if (!namesInput.value.trim()) {
-                alert('Please enter names for the detected faces');
-                return;
-            }
-
-            const formData = new FormData();
-            formData.append('file', fileInput.files[0]);
-            formData.append('names', namesInput.value.trim());
-
-            resultDiv.innerHTML = '<div class="loading">Analyzing image... Please wait...</div>';
-
-            try {
-                const response = await fetch('http://localhost:8000/analyze-image', {
-                    method: 'POST',
-                    body: formData
-                });
-                const data = await response.json();
-                
-                if (data.status === 'success') {
-                    resultDiv.innerHTML = `<div class="markdown">${formatMarkdown(data.description)}</div>`;
-                } else {
-                    resultDiv.innerHTML = `<h3>Error:</h3><p>${data.error}</p>`;
-                }
-            } catch (error) {
-                resultDiv.innerHTML = `<h3>Error:</h3><p>${error.message}</p>`;
-            }
+            // Redraw face boxes
+            drawFaceBoxes(state.faces);
+            updateAnalyzeButtonState();
         }
     </script>
 </body>
