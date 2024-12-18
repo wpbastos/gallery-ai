@@ -120,3 +120,6 @@ settings_dev.py
 # System Files
 .DS_Store
 Thumbs.db
+
+# Credentials
+google_credentials.json

@@ -5,3 +5,4 @@ pillow==11.0.0
 python-dotenv==1.0.1
 openai==1.58.1
 google-cloud-vision==3.9.0
+PyYAML==6.0.2

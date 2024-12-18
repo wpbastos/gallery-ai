@@ -44,18 +44,28 @@
         }
 
         .control-panel {
-            display: grid;
-            grid-template-columns: 1fr auto auto;
-            gap: 20px;
-            align-items: center;
+            display: flex;
+            justify-content: space-between;
+            gap: 24px;
+            align-items: flex-start;
+        }
+
+        .left-controls {
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+        }
+
+        .right-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            flex: 1;
+            max-width: 400px;
         }
 
         .file-input-wrapper {
-            position: relative;
-        }
-
-        .file-input {
-            display: none;
+            flex-shrink: 0;
         }
 
         .file-input-label {
@@ -69,6 +79,7 @@
             cursor: pointer;
             font-weight: 500;
             transition: background 0.2s;
+            height: 44px;
         }
 
         .file-input-label:hover {
@@ -85,6 +96,7 @@
             display: flex;
             flex-direction: column;
             gap: 8px;
+            width: 100%;
         }
 
         .temperature-label {
@@ -130,6 +142,8 @@
             display: inline-flex;
             align-items: center;
             gap: 8px;
+            height: 44px;
+            min-width: 120px;
         }
 
         .analyze-button:hover {
@@ -433,72 +447,118 @@
         /* Face Detection Styles */
         .face-box {
             position: absolute;
-            border: 1px solid rgba(26, 115, 232, 0.3);
-            background-color: transparent;
+            border: 2px solid #1a73e8;
+            background-color: rgba(26, 115, 232, 0.1);
             transition: all 0.2s ease;
             cursor: pointer;
         }
 
         .face-box:hover {
-            border-color: rgba(26, 115, 232, 0.7);
+            border-color: #1557b0;
+            background-color: rgba(26, 115, 232, 0.2);
         }
 
         .face-label {
             position: absolute;
-            top: -25px;
+            top: -35px;
             left: 50%;
             transform: translateX(-50%);
-            background-color: transparent;
-            color: rgb(255, 255, 255);
-            padding: 0;
+            display: flex;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 4px 8px;
             border-radius: 4px;
             font-size: 12px;
             white-space: nowrap;
             z-index: 10;
             transition: all 0.2s ease;
-            display: flex;
-            min-width: max-content;
-            width: auto;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         .face-box:hover .face-label {
-            color: rgb(255, 255, 255);
+            background-color: rgba(0, 0, 0, 0.9);
         }
 
         .face-label input {
             background: none;
             border: none;
-            color: rgb(255, 255, 255);
-            font-size: 12px;
+            color: white;
+            font-size: 13px;
+            font-weight: 500;
             text-align: center;
             width: auto;
-            min-width: 60px;
+            min-width: 80px;
             padding: 2px 8px;
             margin: 0;
             outline: none;
-            transition: all 0.2s ease;
+        }
+
+        .confidence-container {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-left: 8px;
+            height: 20px;
+        }
+
+        .confidence {
+            background-color: rgba(46, 204, 113, 0.9);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            white-space: nowrap;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .low-confidence {
+            background-color: rgba(230, 126, 34, 0.9);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            white-space: nowrap;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .face-label input[disabled] {
+            background-color: rgba(46, 204, 113, 0.1);
+            border: 1px solid rgba(46, 204, 113, 0.3);
+            border-radius: 3px;
+            cursor: not-allowed;
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 600;
         }
 
         .face-close {
             position: absolute;
             top: -8px;
             right: -8px;
-            width: 16px;
-            height: 16px;
+            width: 20px;
+            height: 20px;
             background-color: #ff4444;
             color: white;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 10px;
+            font-size: 14px;
             cursor: pointer;
             opacity: 0;
-            transition: opacity 0.2s ease;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
 
         .face-box:hover .face-close {
             opacity: 1;
+        }
+
+        .face-close:hover {
+            background-color: #ff1111;
+            transform: scale(1.1);
         }
 
         .history-image-container {
@@ -530,6 +590,120 @@
             flex: 1;
             min-width: 0;
         }
+
+        .confidence {
+            background-color: rgba(46, 204, 113, 0.8);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 8px;
+            font-size: 10px;
+        }
+        
+        .low-confidence {
+            background-color: rgba(230, 126, 34, 0.8);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 8px;
+            font-size: 10px;
+        }
+        
+        .face-label input[disabled] {
+            background-color: rgba(46, 204, 113, 0.1);
+            border: 1px solid rgba(46, 204, 113, 0.3);
+            cursor: not-allowed;
+        }
+
+        .confidence-container {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-left: 8px;
+        }
+        
+        .confidence {
+            background-color: rgba(46, 204, 113, 0.8);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            white-space: nowrap;
+        }
+        
+        .low-confidence {
+            background-color: rgba(230, 126, 34, 0.8);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            white-space: nowrap;
+        }
+        
+        .face-label {
+            display: flex;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.6);
+            padding: 4px;
+            border-radius: 4px;
+        }
+        
+        .face-label input {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 12px;
+            text-align: center;
+            width: auto;
+            min-width: 60px;
+            padding: 2px 8px;
+            margin: 0;
+            outline: none;
+        }
+        
+        .face-label input[disabled] {
+            background-color: rgba(46, 204, 113, 0.1);
+            border: 1px solid rgba(46, 204, 113, 0.3);
+            cursor: not-allowed;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .confidence-control {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .confidence-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .confidence-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 4px;
+            background: #e0e0e0;
+            border-radius: 2px;
+            outline: none;
+        }
+
+        .confidence-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #1a73e8;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .confidence-slider::-webkit-slider-thumb:hover {
+            background: #1557b0;
+        }
     </style>
 </head>
 <body>
@@ -540,28 +714,41 @@
 
         <div class="card">
             <div class="control-panel">
-                <div class="file-input-wrapper">
-                    <label class="file-input-label">
-                        <span class="material-icons">add_photo_alternate</span>
-                        Choose an image
-                        <input type="file" class="file-input" id="imageInput" accept="image/*">
-                    </label>
-                    <div class="file-path" id="selectedFileName"></div>
-                </div>
-
-                <div class="temperature-control">
-                    <div class="temperature-label">
-                        <span>Temperature</span>
-                        <span id="temperatureValue">1.0</span>
+                <div class="left-controls">
+                    <div class="file-input-wrapper">
+                        <label class="file-input-label">
+                            <span class="material-icons">add_photo_alternate</span>
+                            Choose an image
+                            <input type="file" class="file-input" id="imageInput" accept="image/*">
+                        </label>
+                        <div class="file-path" id="selectedFileName"></div>
                     </div>
-                    <input type="range" id="temperature" class="temperature-slider" 
-                           min="0" max="2" step="0.1" value="1.0">
+
+                    <button class="analyze-button" id="analyzeButton" disabled>
+                        <span class="spinner"></span>
+                        <span class="button-text">Analyze</span>
+                    </button>
                 </div>
 
-                <button class="analyze-button" id="analyzeButton" disabled>
-                    <span class="spinner"></span>
-                    <span class="button-text">Analyze</span>
-                </button>
+                <div class="right-controls">
+                    <div class="temperature-control">
+                        <div class="temperature-label">
+                            <span>Temperature</span>
+                            <span id="temperatureValue">1.0</span>
+                        </div>
+                        <input type="range" id="temperature" class="temperature-slider" 
+                               min="0" max="2" step="0.1" value="1.0">
+                    </div>
+
+                    <div class="confidence-control">
+                        <div class="confidence-label">
+                            <span>Recognition Confidence</span>
+                            <span id="confidenceValue">95.0%</span>
+                        </div>
+                        <input type="range" id="confidenceThreshold" class="confidence-slider" 
+                               min="0" max="100" step="0.1" value="95.0">
+                    </div>
+                </div>
             </div>
 
             <div class="status-message error-message" id="errorMessage"></div>
@@ -609,6 +796,7 @@
             faceNames: new Map(),
             allNamesEntered: false,
             temperature: 1.0,
+            confidenceThreshold: 95.0,
             analysisHistory: []
         };
 
@@ -788,7 +976,7 @@
 
                 const box = document.createElement('div');
                 box.className = 'face-box';
-                box.dataset.faceIndex = index; // Store the original index
+                box.dataset.faceIndex = index;
                 
                 // Scale coordinates to match displayed image size
                 const [x1, y1, x2, y2] = face.box_2d;
@@ -797,57 +985,111 @@
                 box.style.width = `${(x2 - x1) * scaleX}px`;
                 box.style.height = `${(y2 - y1) * scaleY}px`;
                 
-                // Create label
+                // Create label with recognition info
                 const label = document.createElement('div');
                 label.className = 'face-label';
+                
+                // Create name input
                 const input = document.createElement('input');
-                input.value = state.faceNames.get(index) || face.label;
                 
-                // Handle name editing
-                input.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    input.select();
-                });
+                // Create confidence display container
+                const confidenceContainer = document.createElement('div');
+                confidenceContainer.className = 'confidence-container';
                 
-                input.addEventListener('change', (e) => {
-                    const newName = e.target.value.trim();
-                    if (newName) {
-                        state.faceNames.set(index, newName);
-                        face.label = newName;
-                    } else {
-                        // If empty, revert to default name
-                        const defaultName = `Face ${index + 1}`;
-                        input.value = defaultName;
-                        state.faceNames.set(index, defaultName);
-                        face.label = defaultName;
+                // If face was recognized with high confidence
+                if (face.recognition && face.recognition.confidence >= 95) {
+                    input.value = face.recognition.name;
+                    input.disabled = true;  // Disable editing for recognized faces
+                    
+                    // Add confidence display
+                    const confidence = document.createElement('span');
+                    confidence.className = 'confidence';
+                    confidence.textContent = `${face.recognition.confidence.toFixed(1)}%`;
+                    confidenceContainer.appendChild(confidence);
+                } else {
+                    // If not recognized or low confidence
+                    input.value = state.faceNames.get(index) || face.label;
+                    
+                    // If there was a low confidence recognition, show it
+                    if (face.recognition) {
+                        const lowConfidence = document.createElement('span');
+                        lowConfidence.className = 'low-confidence';
+                        lowConfidence.textContent = `${face.recognition.confidence.toFixed(1)}%`;
+                        confidenceContainer.appendChild(lowConfidence);
                     }
-                    updateAnalyzeButtonState();
-                });
+                    
+                    // Handle name editing
+                    input.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        input.select();
+                    });
+                    
+                    input.addEventListener('change', async (e) => {
+                        const newName = e.target.value.trim();
+                        if (newName) {
+                            state.faceNames.set(index, newName);
+                            face.label = newName;
+                            
+                            // Update training data
+                            const formData = new FormData();
+                            formData.append('file', state.imageFile);
+                            formData.append('face_index', index);
+                            formData.append('name', newName);
+                            formData.append('box_2d', JSON.stringify(face.box_2d));
+                            
+                            try {
+                                const response = await fetch('http://localhost:8000/update-face-name', {
+                                    method: 'POST',
+                                    body: formData
+                                });
+                                
+                                if (response.ok) {
+                                    showSuccess(`Updated face ${index + 1} as '${newName}'`);
+                                } else {
+                                    showError('Failed to update face name');
+                                }
+                            } catch (error) {
+                                console.error('Error updating face name:', error);
+                                showError('Error updating face name');
+                            }
+                        } else {
+                            // If empty, revert to default name
+                            const defaultName = `Face ${index + 1}`;
+                            input.value = defaultName;
+                            state.faceNames.set(index, defaultName);
+                            face.label = defaultName;
+                        }
+                        updateAnalyzeButtonState();
+                    });
+                }
                 
                 // Handle keyboard events
                 input.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter') {
-                        input.blur(); // Remove focus
+                        input.blur();
                     }
                 });
                 
                 label.appendChild(input);
+                label.appendChild(confidenceContainer);
                 
-                // Create close button
-                const closeBtn = document.createElement('div');
-                closeBtn.className = 'face-close';
-                closeBtn.innerHTML = '×';
-                closeBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const faceIndex = parseInt(box.dataset.faceIndex);
-                    removedFaceIndices.add(faceIndex); // Mark this face as removed
-                    state.faceNames.delete(faceIndex);
-                    box.remove();
-                    updateAnalyzeButtonState();
-                });
+                // Create close button for unrecognized faces
+                if (!face.recognition || face.recognition.confidence < 95) {
+                    const closeBtn = document.createElement('div');
+                    closeBtn.className = 'face-close';
+                    closeBtn.innerHTML = '×';
+                    closeBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const faceIndex = parseInt(box.dataset.faceIndex);
+                        removedFaceIndices.add(faceIndex);
+                        state.faceNames.delete(faceIndex);
+                        box.remove();
+                        updateAnalyzeButtonState();
+                    });
+                    box.appendChild(closeBtn);
+                }
                 
                 box.appendChild(label);
-                box.appendChild(closeBtn);
                 imagePreview.appendChild(box);
             });
         }
@@ -960,6 +1202,77 @@
                 .replace(/\n/g, '<br>')
                 .replace(/\s{4}/g, '&nbsp;&nbsp;&nbsp;&nbsp;');
         }
+
+        // Add confidence threshold change handler
+        document.getElementById('confidenceThreshold').addEventListener('input', function(e) {
+            state.confidenceThreshold = parseFloat(e.target.value);
+            document.getElementById('confidenceValue').textContent = state.confidenceThreshold.toFixed(1) + '%';
+            if (state.imageFile) {
+                detectFaces(state.imageFile);  // Re-detect faces with new threshold
+            }
+        });
+
+        // Update the detectFaces function
+        async function detectFaces(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('confidence_threshold', state.confidenceThreshold.toString());
+
+            try {
+                const response = await fetch('http://localhost:8000/detect-faces', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                if (data.status === 'success') {
+                    faces = data.faces;
+                    showSuccess(`Detected ${faces.length} faces`);
+                    createFaceBoxes(faces);
+                }
+            } catch (error) {
+                console.error('Error detecting faces:', error);
+                showError('Error detecting faces: ' + error.message);
+            }
+        }
+
+        // Update the file input handler
+        document.getElementById('imageInput').addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // Reset all face-related data
+            currentImage = file;
+            faces = [];
+            removedFaceIndices.clear();
+            state.faceNames.clear();
+            
+            // Clear any existing face boxes
+            const existingBoxes = document.querySelectorAll('.face-box');
+            existingBoxes.forEach(box => box.remove());
+
+            const preview = document.getElementById('imagePreview');
+            const placeholder = document.getElementById('imagePlaceholder');
+            const fileNameSpan = document.getElementById('selectedFileName');
+            
+            state.imageFile = file;
+            updateUIState(false);
+
+            // Load and display the image
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                preview.style.display = 'block';
+                preview.src = e.target.result;
+                placeholder.style.display = 'none';
+                fileNameSpan.textContent = file.name;
+                
+                // Detect faces after image is loaded
+                preview.onload = () => {
+                    detectFaces(file);
+                };
+            };
+            reader.readAsDataURL(file);
+        });
     </script>
 </body>
 </html> 
