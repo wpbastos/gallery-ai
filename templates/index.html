@@ -582,23 +582,14 @@
             <div class="card">
                 <h2>Analysis Results</h2>
                 <div class="analysis-tabs">
-                    <button class="tab-button active" onclick="switchTab('gemini')">
-                        Gemini
-                        <span class="loading-indicator"></span>
-                    </button>
-                    <button class="tab-button" onclick="switchTab('openai')">
-                        OpenAI
+                    <button class="tab-button active">
+                        OpenAI Analysis
                         <span class="loading-indicator"></span>
                     </button>
                 </div>
-                <div id="geminiResult" class="tab-content active">
+                <div id="openaiResult" class="tab-content active">
                     <div class="placeholder-text">
-                        Gemini analysis results will appear here after processing.
-                    </div>
-                </div>
-                <div id="openaiResult" class="tab-content">
-                    <div class="placeholder-text">
-                        OpenAI analysis results will appear here after processing.
+                        Analysis results will appear here after processing.
                     </div>
                 </div>
             </div>
@@ -617,17 +608,15 @@
             imageFile: null,
             faceNames: new Map(),
             allNamesEntered: false,
-            currentTab: 'gemini',
             temperature: 1.0,
             analysisHistory: []
         };
 
-        function addToHistory(imageFile, geminiResult, openaiResult) {
+        function addToHistory(imageFile, result) {
             const historyItem = {
                 file: imageFile,
                 timestamp: new Date(),
-                geminiResult,
-                openaiResult
+                result
             };
             state.analysisHistory.unshift(historyItem);
             updateHistoryDisplay();
@@ -645,16 +634,9 @@
                             <strong>${item.file.name}</strong>
                             <div class="history-time">Analyzed at ${item.timestamp.toLocaleTimeString()}</div>
                         </div>
-                        <div class="history-tabs">
-                            <button class="history-tab active" onclick="switchHistoryTab(${index}, 'gemini')">Gemini</button>
-                            <button class="history-tab" onclick="switchHistoryTab(${index}, 'openai')">OpenAI</button>
-                        </div>
                         <div class="history-results">
-                            <div class="history-result active" id="history-gemini-${index}">
-                                ${formatMarkdown(item.geminiResult)}
-                            </div>
-                            <div class="history-result" id="history-openai-${index}">
-                                ${formatMarkdown(item.openaiResult)}
+                            <div class="history-result active">
+                                ${formatMarkdown(item.result)}
                             </div>
                         </div>
                     </div>
@@ -662,90 +644,61 @@
             `).join('');
         }
 
-        function switchHistoryTab(index, tab) {
-            // Update tab buttons
-            const historyItem = document.querySelectorAll('.image-list-item')[index];
-            const tabs = historyItem.querySelectorAll('.history-tab');
-            tabs.forEach(t => t.classList.remove('active'));
-            const activeTab = Array.from(tabs).find(t => t.textContent.toLowerCase() === tab);
-            if (activeTab) activeTab.classList.add('active');
-
-            // Update content
-            const results = historyItem.querySelectorAll('.history-result');
-            results.forEach(r => r.classList.remove('active'));
-            document.getElementById(`history-${tab}-${index}`).classList.add('active');
-        }
-
-        function checkAllNamesEntered() {
-            if (!state.faces.length) return false;
+        async function analyzeImage() {
+            if (!state.imageFile || state.isProcessing) return;
             
-            // Check if all faces have non-empty names
-            for (let i = 0; i < state.faces.length; i++) {
-                const name = state.faceNames.get(i);
-                if (!name || name.trim() === '' || name === `Face ${i + 1}`) {
-                    return false;
-                }
+            updateUIState(true);
+            
+            try {
+                const formData = new FormData();
+                formData.append('file', state.imageFile);
+                formData.append('temperature', state.temperature.toString());
+                
+                // Prepare face locations data excluding removed faces
+                const faceLocations = {
+                    face_detections: faces
+                        .map((face, index) => {
+                            // Skip if this face was removed
+                            if (removedFaceIndices.has(index)) return null;
+                            
+                            return {
+                                name: state.faceNames.get(index) || face.label,
+                                coordinates: face.box_2d
+                            };
+                        })
+                        .filter(face => face !== null) // Remove null entries (removed faces)
+                };
+                
+                formData.append('face_locations', JSON.stringify(faceLocations));
+                
+                const response = await fetch('http://localhost:8000/analyze-image-openai', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                if (data.error) throw new Error(data.error);
+                
+                document.getElementById('openaiResult').innerHTML = formatMarkdown(data.description);
+                showSuccess('Analysis completed');
+                addToHistory(state.imageFile, data.description);
+
+            } catch (error) {
+                showError(`Analysis failed: ${error.message}`);
+                document.getElementById('openaiResult').innerHTML = `<div class="error-text">Analysis failed: ${error.message}</div>`;
+            } finally {
+                updateUIState(false);
             }
-            return true;
-        }
-
-        function updateAnalyzeButtonState() {
-            const button = document.getElementById('analyzeButton');
-            state.allNamesEntered = checkAllNamesEntered();
-            button.disabled = state.isProcessing || !state.imageFile;
-            
-            // Update button text based on state
-            const buttonText = button.querySelector('.button-text');
-            if (!state.imageFile) {
-                buttonText.textContent = 'Please select an image';
-            } else if (state.faces.length > 0 && !state.allNamesEntered) {
-                buttonText.textContent = 'Please name all faces';
-                button.disabled = true;
-            } else {
-                buttonText.textContent = 'Analyze Image';
-            }
-        }
-
-        function showError(message) {
-            const errorElement = document.getElementById('errorMessage');
-            errorElement.textContent = message;
-            errorElement.style.display = 'block';
-            errorElement.classList.remove('fade-out');
-            
-            setTimeout(() => {
-                errorElement.classList.add('fade-out');
-                setTimeout(() => {
-                    errorElement.style.display = 'none';
-                    errorElement.classList.remove('fade-out');
-                }, 300);
-            }, 10000);
-        }
-
-        function showSuccess(message) {
-            const successElement = document.getElementById('successMessage');
-            successElement.textContent = message;
-            successElement.style.display = 'block';
-            successElement.classList.remove('fade-out');
-            
-            setTimeout(() => {
-                successElement.classList.add('fade-out');
-                setTimeout(() => {
-                    successElement.style.display = 'none';
-                    successElement.classList.remove('fade-out');
-                }, 300);
-            }, 10000);
         }
 
         function updateUIState(processing) {
             state.isProcessing = processing;
             const button = document.getElementById('analyzeButton');
             const spinner = button.querySelector('.spinner');
-            const geminiTab = document.querySelector('.tab-button:nth-child(1)');
-            const openaiTab = document.querySelector('.tab-button:nth-child(2)');
+            const tab = document.querySelector('.tab-button');
             
             if (!processing) {
-                geminiTab.classList.remove('loading');
-                openaiTab.classList.remove('loading');
+                tab.classList.remove('loading');
             }
             
             updateAnalyzeButtonState();
@@ -910,111 +863,51 @@
             }, 100);
         });
 
-        function switchTab(tab) {
-            // Update active tab button
-            document.querySelectorAll('.tab-button').forEach(button => {
-                button.classList.remove('active');
-                if (button.textContent.toLowerCase().includes(tab)) {
-                    button.classList.add('active');
-                }
-            });
-
-            // Update active content
-            document.querySelectorAll('.tab-content').forEach(content => {
-                content.classList.remove('active');
-            });
-            document.getElementById(`${tab}Result`).classList.add('active');
-            state.currentTab = tab;
-        }
-
-        async function analyzeImage() {
-            if (!state.imageFile || state.isProcessing) return;
+        function updateAnalyzeButtonState() {
+            const button = document.getElementById('analyzeButton');
+            state.allNamesEntered = checkAllNamesEntered();
+            button.disabled = state.isProcessing || !state.imageFile;
             
-            updateUIState(true);
-            
-            try {
-                const formData = new FormData();
-                formData.append('file', state.imageFile);
-                formData.append('temperature', state.temperature.toString());
-                
-                // Prepare face locations data excluding removed faces
-                const faceLocations = {
-                    face_detections: faces
-                        .map((face, index) => {
-                            // Skip if this face was removed
-                            if (removedFaceIndices.has(index)) return null;
-                            
-                            return {
-                                name: state.faceNames.get(index) || face.label,
-                                coordinates: face.box_2d
-                            };
-                        })
-                        .filter(face => face !== null) // Remove null entries (removed faces)
-                };
-                
-                formData.append('face_locations', JSON.stringify(faceLocations));
-                
-                // Start both analyses but handle them independently
-                const geminiTab = document.querySelector('.tab-button:nth-child(1)');
-                const openaiTab = document.querySelector('.tab-button:nth-child(2)');
-                
-                geminiTab.classList.add('loading');
-                openaiTab.classList.add('loading');
-
-                const geminiPromise = fetch('http://localhost:8000/analyze-image', {
-                    method: 'POST',
-                    body: formData
-                }).then(async response => {
-                    const data = await response.json();
-                    if (data.error) throw new Error(data.error);
-                    document.getElementById('geminiResult').innerHTML = formatMarkdown(data.description);
-                    showSuccess('Gemini analysis completed');
-                    geminiTab.classList.remove('loading');
-                    return data;
-                }).catch(error => {
-                    showError(`Gemini analysis failed: ${error.message}`);
-                    document.getElementById('geminiResult').innerHTML = `<div class="error-text">Analysis failed: ${error.message}</div>`;
-                    geminiTab.classList.remove('loading');
-                    throw error;
-                });
-
-                const openaiPromise = fetch('http://localhost:8000/analyze-image-openai', {
-                    method: 'POST',
-                    body: formData
-                }).then(async response => {
-                    const data = await response.json();
-                    if (data.error) throw new Error(data.error);
-                    document.getElementById('openaiResult').innerHTML = formatMarkdown(data.description);
-                    showSuccess('OpenAI analysis completed');
-                    openaiTab.classList.remove('loading');
-                    return data;
-                }).catch(error => {
-                    showError(`OpenAI analysis failed: ${error.message}`);
-                    document.getElementById('openaiResult').innerHTML = `<div class="error-text">Analysis failed: ${error.message}</div>`;
-                    openaiTab.classList.remove('loading');
-                    throw error;
-                });
-
-                // Wait for both to complete to update history
-                try {
-                    const [geminiData, openaiData] = await Promise.allSettled([geminiPromise, openaiPromise]);
-                    if (geminiData.status === 'fulfilled' && openaiData.status === 'fulfilled') {
-                        addToHistory(state.imageFile, geminiData.value.description, openaiData.value.description);
-                    }
-                } catch (error) {
-                    console.error('Error updating history:', error);
-                }
-
-            } finally {
-                updateUIState(false);
+            // Update button text based on state
+            const buttonText = button.querySelector('.button-text');
+            if (!state.imageFile) {
+                buttonText.textContent = 'Please select an image';
+            } else if (state.faces.length > 0 && !state.allNamesEntered) {
+                buttonText.textContent = 'Please name all faces';
+                button.disabled = true;
+            } else {
+                buttonText.textContent = 'Analyze Image';
             }
         }
 
-        function formatMarkdown(text) {
-            return text
-                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                .replace(/\n/g, '<br>')
-                .replace(/\s{4}/g, '&nbsp;&nbsp;&nbsp;&nbsp;');
+        function showError(message) {
+            const errorElement = document.getElementById('errorMessage');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+            errorElement.classList.remove('fade-out');
+            
+            setTimeout(() => {
+                errorElement.classList.add('fade-out');
+                setTimeout(() => {
+                    errorElement.style.display = 'none';
+                    errorElement.classList.remove('fade-out');
+                }, 300);
+            }, 10000);
+        }
+
+        function showSuccess(message) {
+            const successElement = document.getElementById('successMessage');
+            successElement.textContent = message;
+            successElement.style.display = 'block';
+            successElement.classList.remove('fade-out');
+            
+            setTimeout(() => {
+                successElement.classList.add('fade-out');
+                setTimeout(() => {
+                    successElement.style.display = 'none';
+                    successElement.classList.remove('fade-out');
+                }, 300);
+            }, 10000);
         }
 
         // Add temperature change handler
@@ -1046,6 +939,26 @@
             // Redraw face boxes
             drawFaceBoxes(state.faces);
             updateAnalyzeButtonState();
+        }
+
+        function checkAllNamesEntered() {
+            if (!state.faces.length) return false;
+            
+            // Check if all faces have non-empty names
+            for (let i = 0; i < state.faces.length; i++) {
+                const name = state.faceNames.get(i);
+                if (!name || name.trim() === '' || name === `Face ${i + 1}`) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function formatMarkdown(text) {
+            return text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\n/g, '<br>')
+                .replace(/\s{4}/g, '&nbsp;&nbsp;&nbsp;&nbsp;');
         }
     </script>
 </body>

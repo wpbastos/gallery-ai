@@ -5,7 +5,6 @@ from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
 from fastapi import Request
 from typing import Optional, Dict, List, Any, Union
-import google.generativeai as genai
 from google.cloud import vision
 from dataclasses import dataclass
 import tempfile
@@ -83,88 +82,6 @@ class FaceDetector:
             logger.error(f"Error in face detection: {str(e)}", exc_info=True)
             raise HTTPException(status_code=500, detail=f"Face detection failed: {str(e)}")
 
-class ImageAnalyzer:
-    """Class handling image analysis operations using Google Gemini API."""
-    
-    def __init__(self, model: genai.GenerativeModel):
-        self.model = model
-        
-    def format_face_locations(self, face_locations_json: Optional[str]) -> Optional[Dict]:
-        """Parse face locations JSON into a structured format."""
-        if not face_locations_json:
-            return None
-            
-        try:
-            data = json.loads(face_locations_json)
-            faces = data.get('face_detections', [])
-            if not faces:
-                return None
-            
-            # Keep the structured format
-            return {
-                "face_detections": [
-                    {
-                        "name": face['name'],
-                        "coordinates": face['coordinates']
-                    }
-                    for face in faces
-                ]
-            }
-        except Exception as e:
-            logger.error(f"Error formatting face locations: {str(e)}")
-            return None
-        
-    def get_analysis_prompt(self, face_locations: Optional[str] = None) -> str:
-        """Generates the analysis prompt with optional face location information."""
-        prompt = """
-Analyze the provided image and produce a comprehensive, structured description. Incorporate object identification, visual attributes, and relationships between elements. For any faces detected, refer to each person by the name provided in the face_detections section and do not include bounding box coordinates in your narrative.
-"""
-        if face_locations:
-            formatted_locations = self.format_face_locations(face_locations)
-            if formatted_locations:
-                # Add face information in JSON format
-                prompt += "Detected faces:\n"
-                prompt += json.dumps(formatted_locations, indent=2)
-                prompt += "\n\n"
-        
-        prompt += """
-Format:
-
-1. Overall Scene & Mood:
-
-General Description: [A brief summary of the scene]
-Scene Type: [e.g., indoor, outdoor, cityscape, etc.]
-Overall Mood: [e.g., peaceful, energetic, tense, joyful]
-Style: [e.g., realistic, abstract, cartoonish, photographic]
-
-2. Objects and Relationships:
-
-Primary Objects:
-- face_detections[].name (use the Word "Person" if someone has no face_detections and do not add this if no person on the picture): each detected person has a box arround the face face_detections[].coordinates and their name as listed in face_detections[].name. Use the name of the person and describe their visible attributes very detailed (e.g., gender, clothing, hair, accessories, facial expression). Do not mention coordinates.
-- [Object 1]: [Type, color, texture, size, and position within the scene]
-- [Object 2]: [Type, color, texture, size, and position within the scene]
-
-Object Relationships:
-Describe how the identified people and any primary objects relate or interact with each other. Avoid referencing any objects or entities not listed as primary.
-
-3. Detailed Visual Attributes:
-
-Dominant Colors: [List the main colors and where they appear]
-Lighting: [Describe the type and direction of light]
-Background Details: [Describe any notable background elements]
-Shape Characteristics: [General description of shapes in the scene]
-Texture Characteristics: [General description of textures in the scene]
-Additional Notes: [Any other relevant details not covered above]
-
-Instructions:
-- Incorporate all detected faces using the given names from face_detections.
-- Do not mention bounding box coordinates in the narrative.
-- Only include objects and categories if they are present in the image.
-- Ensure your final description is cohesive, visually rich, and accurately reflects the image's content and atmosphere.
-"""
-
-        return prompt
-
 class OpenAIAnalyzer:
     """Class handling image analysis operations using OpenAI API."""
     
@@ -198,8 +115,8 @@ class OpenAIAnalyzer:
         
     def get_analysis_prompt(self, face_locations: Optional[str] = None) -> str:
         """Generates the analysis prompt with optional face location information."""
-        prompt = """
-Analyze the provided image and produce a comprehensive, structured description. Incorporate object identification, visual attributes, and relationships between elements. For any faces detected, refer to each person by the name provided in the face_detections section and do not include bounding box coordinates in your narrative.
+        prompt = """Analyze the provided image and produce a comprehensive, structured description. Incorporate object identification, visual attributes, and relationships between elements. For any faces detected, refer to each person by the name provided in the face_detections section and do not include bounding box coordinates in your narrative.
+
 """
         if face_locations:
             formatted_locations = self.format_face_locations(face_locations)
@@ -209,8 +126,7 @@ Analyze the provided image and produce a comprehensive, structured description. 
                 prompt += json.dumps(formatted_locations, indent=2)
                 prompt += "\n\n"
         
-        prompt += """
-Format:
+        prompt += """Format:
 
 1. Overall Scene & Mood:
 
@@ -222,7 +138,8 @@ Style: [e.g., realistic, abstract, cartoonish, photographic]
 2. Objects and Relationships:
 
 Primary Objects:
-- face_detections[].name (use the word "Person" if someone has no face_detections and do not add this if no person on the picture): each detected person has a box arround the face face_detections[].coordinates and their name as listed in face_detections[].name. Use the name of the person and describe their visible attributes very detailed (e.g., gender, clothing, hair, accessories, facial expression). Do not mention coordinates.
+
+- face_detections[].name (use the Word "Person" if someone has no face_detections): Refer to each detected person that has a box arround the face face_detections[].coordinates and their name as listed in face_detections[].name. Use the name of the person and describe their visible attributes very detailed (e.g., gender, clothing, hair, accessories, facial expression). Do not mention coordinates.
 - [Object 1]: [Type, color, texture, size, and position within the scene]
 - [Object 2]: [Type, color, texture, size, and position within the scene]
 
@@ -242,9 +159,7 @@ Instructions:
 - Incorporate all detected faces using the given names from face_detections.
 - Do not mention bounding box coordinates in the narrative.
 - Only include objects and categories if they are present in the image.
-- Ensure your final description is cohesive, visually rich, and accurately reflects the image's content and atmosphere.
-"""
-
+- Ensure your final description is cohesive, visually rich, and accurately reflects the image's content and atmosphere."""
         return prompt
 
     async def analyze_image(self, image_path: str, face_locations: Optional[str] = None, temperature: float = 1.0) -> str:
@@ -285,35 +200,22 @@ Instructions:
             logger.error(f"OpenAI analysis error: {str(e)}", exc_info=True)
             raise HTTPException(status_code=500, detail=f"OpenAI analysis failed: {str(e)}")
 
-def init_app() -> tuple[FastAPI, FaceDetector, ImageAnalyzer, OpenAIAnalyzer, Jinja2Templates]:
+def init_app() -> tuple[FastAPI, FaceDetector, OpenAIAnalyzer, Jinja2Templates]:
     """Initialize the FastAPI application and required services."""
     # Load environment variables
     load_dotenv()
     logger.info(f"Loading credentials from: {os.getenv('GOOGLE_APPLICATION_CREDENTIALS')}")
     
     # Configure APIs
-    genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
     vision_client = vision.ImageAnnotatorClient()
-    openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    openai_client = OpenAI(
+        api_key=os.getenv("OPENAI_API_KEY"),
+        organization=os.getenv("OPENAI_ORG_ID", None)  # Add organization ID support
+    )
     
     # Initialize services
     face_detector = FaceDetector(vision_client)
     openai_analyzer = OpenAIAnalyzer(openai_client)
-    
-    generation_config = {
-        "temperature": 1,
-        "top_p": 0.95,
-        "top_k": 40,
-        "max_output_tokens": 8192,
-        "response_mime_type": "text/plain",
-    }
-    
-    model = genai.GenerativeModel(
-        model_name="gemini-2.0-flash-exp",
-        generation_config=generation_config,
-    )
-    
-    image_analyzer = ImageAnalyzer(model)
     
     # Create FastAPI app
     app = FastAPI()
@@ -340,10 +242,10 @@ def init_app() -> tuple[FastAPI, FaceDetector, ImageAnalyzer, OpenAIAnalyzer, Ji
         expose_headers=["*"]
     )
     
-    return app, face_detector, image_analyzer, openai_analyzer, templates
+    return app, face_detector, openai_analyzer, templates
 
 # Initialize application and services
-app, face_detector, image_analyzer, openai_analyzer, templates = init_app()
+app, face_detector, openai_analyzer, templates = init_app()
 
 async def handle_uploaded_file(file: UploadFile) -> tuple[str, str]:
     """Handle file upload and return temporary file path."""
@@ -394,58 +296,6 @@ async def http_exception_handler(request: Request, exc: HTTPException):
         content={"error": exc.detail, "status": "error"}
     )
 
-@app.post("/analyze-image")
-async def analyze_image(
-    file: UploadFile = File(...),
-    face_locations: Optional[str] = Form(None),
-    temperature: float = Form(1.0)
-) -> Dict[str, Any]:
-    """Endpoint for analyzing images with optional face location information."""
-    temp_file_path = None
-    try:
-        logger.info(f"Received image analysis request for file: {file.filename}")
-        logger.info(f"Using temperature: {temperature}")
-        logger.info(f"Face locations received: {face_locations}")
-        temp_file_path, _ = await handle_uploaded_file(file)
-        
-        # Configure Gemini with temperature
-        generation_config = {
-            "temperature": float(temperature),
-            "top_p": 0.95,
-            "top_k": 40,
-            "max_output_tokens": 8192,
-        }
-        model = genai.GenerativeModel(
-            model_name="gemini-2.0-flash-exp",
-            generation_config=generation_config,
-        )
-        
-        # Upload to Gemini and analyze
-        uploaded_file = genai.upload_file(temp_file_path, mime_type="image/jpeg")
-        prompt = image_analyzer.get_analysis_prompt(face_locations)
-        
-        # Log the complete prompt for debugging
-        logger.info("Complete Gemini prompt:")
-        logger.info(prompt)
-        
-        chat_session = model.start_chat()
-        response = chat_session.send_message([uploaded_file, prompt])
-        
-        return {
-            "description": response.text,
-            "status": "success"
-        }
-    except Exception as e:
-        logger.error(f"Error in image analysis: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Image analysis failed: {str(e)}")
-    finally:
-        if temp_file_path and os.path.exists(temp_file_path):
-            try:
-                os.unlink(temp_file_path)
-                logger.info("Temporary file cleaned up")
-            except Exception as e:
-                logger.error(f"Error cleaning up temporary file: {str(e)}")
-
 @app.post("/analyze-image-openai")
 async def analyze_image_openai(
     file: UploadFile = File(...),
@@ -459,11 +309,6 @@ async def analyze_image_openai(
         logger.info(f"Using temperature: {temperature}")
         logger.info(f"Face locations received: {face_locations}")
         temp_file_path, _ = await handle_uploaded_file(file)
-        
-        # Get and log the prompt
-        prompt = openai_analyzer.get_analysis_prompt(face_locations)
-        logger.info("Complete OpenAI prompt:")
-        logger.info(prompt)
         
         response_text = await openai_analyzer.analyze_image(temp_file_path, face_locations, temperature)
         
